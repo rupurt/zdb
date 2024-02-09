@@ -1,6 +1,6 @@
 const std = @import("std");
 const builtin = std.builtin;
-const CompileStep = std.build.CompileStep;
+const CompileStep = std.Build.CompileStep;
 
 const test_files = .{
     "src/ParameterBucket.zig",
@@ -9,7 +9,7 @@ const test_files = .{
 
 const Example = struct {
     name: []const u8,
-    source_file: std.Build.FileSource,
+    source_file: std.Build.LazyPath,
     description: []const u8,
 };
 
@@ -36,7 +36,7 @@ const examples = [_]Example{
     },
 };
 
-pub fn build(b: *std.build.Builder) !void {
+pub fn build(b: *std.Build) !void {
     const optimize = b.standardOptimizeOption(.{});
     const target = b.standardTargetOptions(.{});
 
@@ -45,40 +45,45 @@ pub fn build(b: *std.build.Builder) !void {
         .optimize = optimize,
     });
 
-    var zdb_module = b.createModule(.{
-        .source_file = .{ .path = "src/zdb.zig" },
-        .dependencies = &.{
-            .{ .name = "odbc", .module = zig_odbc_dep.module("zig-odbc") },
+    const zdb_module = b.createModule(.{
+        .root_source_file = .{ .path = "src/zdb.zig" },
+        .imports = &.{
+            .{ .name = "zig-odbc", .module = zig_odbc_dep.module("zig-odbc") },
         },
     });
+    _ = zdb_module;
 
-    var lib = b.addStaticLibrary(.{
+    const lib = b.addSharedLibrary(.{
         .name = "zdb",
         .optimize = optimize,
         .target = target,
     });
+    // try b.modules.put(b.dupe("libzdb"), zdb_module);
 
-    const odbc_lib = zig_odbc_dep.artifact("odbc");
+    const odbc_lib = zig_odbc_dep.artifact("zigodbc");
     lib.linkLibrary(odbc_lib);
 
-    inline for (examples) |example| {
-        const example_exe = b.addExecutable(.{
-            .name = example.name,
-            .root_source_file = example.source_file,
-            .optimize = optimize,
-            .target = target,
-        });
+    b.installArtifact(lib);
 
-        example_exe.addModule("zdb", zdb_module);
-        example_exe.linkLibrary(odbc_lib);
-
-        const install_step = b.addInstallArtifact(example_exe, .{});
-
-        const run_cmd = b.addRunArtifact(example_exe);
-        run_cmd.step.dependOn(&install_step.step);
-        const run_step = b.step(example.name, example.description);
-        run_step.dependOn(&run_cmd.step);
-    }
+    // inline for (examples) |example| {
+    //     const example_exe = b.addExecutable(.{
+    //         .name = example.name,
+    //         .root_source_file = example.source_file,
+    //         .optimize = optimize,
+    //         .target = target,
+    //     });
+    //
+    //     // example_exe.addModule("zdb", zdb_module);
+    //     // example_exe.linkLibrary(odbc_lib);
+    //     example_exe.linkLibrary(lib);
+    //
+    //     const install_step = b.addInstallArtifact(example_exe, .{});
+    //
+    //     const run_cmd = b.addRunArtifact(example_exe);
+    //     run_cmd.step.dependOn(&install_step.step);
+    //     const run_step = b.step(example.name, example.description);
+    //     run_step.dependOn(&run_cmd.step);
+    // }
 
     const test_step = b.step("test", "Run library tests");
     inline for (test_files) |filename| {

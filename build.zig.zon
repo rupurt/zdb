@@ -1,11 +1,12 @@
 .{
     .name = "zdb",
     .version = "0.2.0",
+    .paths = .{""},
 
     .dependencies = .{
         .zig_odbc = .{
-            .url = "https://github.com/mjoerussell/zig-odbc/archive/main.tar.gz",
-            .hash = "12201a961f7b538543444f6ca418b0ea5482c18119b4e39cf6a8abfd90471e0497b3",
+            .url = "https://github.com/rupurt/zig-odbc/archive/zig-0.12.0-support.tar.gz",
+            .hash = "1220094e8f5f61d5c1271a335d3433d1840f0f2bbae07d2a19513ca85857c11563aa",
         },
     },
 }

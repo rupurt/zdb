@@ -1,6 +1,6 @@
 const std = @import("std");
 const Allocator = std.mem.Allocator;
-const odbc = @import("odbc");
+const odbc = @import("zig-odbc");
 
 const EraseComptime = @import("util.zig").EraseComptime;
 
@@ -45,7 +45,7 @@ data: []u8,
 indicators: []c_longlong,
 
 pub fn init(allocator: Allocator, num_params: usize) !ParameterBucket {
-    var indicators = try allocator.alloc(c_longlong, num_params);
+    const indicators = try allocator.alloc(c_longlong, num_params);
     errdefer allocator.free(indicators);
 
     for (indicators) |*i| i.* = 0;
@@ -150,7 +150,7 @@ test "add parameter to ParameterBucket" {
     var bucket = try ParameterBucket.init(allocator, 5);
     defer bucket.deinit(allocator);
 
-    var param_value: u32 = 10;
+    const param_value: u32 = 10;
 
     const param = try bucket.set(allocator, param_value, 0);
 
@@ -164,7 +164,7 @@ test "add string parameter to ParameterBucket" {
     var bucket = try ParameterBucket.init(allocator, 5);
     defer bucket.deinit(allocator);
 
-    var param_value = "some string value";
+    const param_value = "some string value";
 
     const param = try bucket.set(allocator, param_value, 0);
 
